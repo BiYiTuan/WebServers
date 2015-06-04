@@ -418,18 +418,18 @@ public class FastHttpsServer {
 
         private void resizeRequestBB() {
             if (requestBB.remaining() < appBBSize) {
-                ByteBuffer bb = ByteBuffer.allocate(requestBB.capacity() * 2);
+                ByteBuffer bb2 = ByteBuffer.allocate(requestBB.capacity() * 2);
                 requestBB.flip();
-                bb.put(requestBB);
-                requestBB = bb;
+                bb2.put(requestBB);
+                requestBB = bb2;
             }
         }
 
         private void resizeResponseBB() {
-            ByteBuffer bb = ByteBuffer.allocate(netBBSize);
+            ByteBuffer bb3 = ByteBuffer.allocate(netBBSize);
             inNetBB.flip();
-            bb.put(inNetBB);
-            inNetBB = bb;
+            bb3.put(inNetBB);
+            inNetBB = bb3;
         }
 
         private boolean tryFlush(ByteBuffer bb) throws IOException {
