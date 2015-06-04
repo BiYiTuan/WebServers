@@ -1,4 +1,4 @@
-# FastHttpServers
+# HttpWebSocketServers
 A collection of http and websocket servers built to demo **Java SE** NIO.2, `AIO` libraries.
 
 All examples contain the basic structure required for performing a large number of requests and responses without crashing or running slowly.
