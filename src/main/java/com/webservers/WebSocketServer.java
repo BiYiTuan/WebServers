@@ -1,4 +1,4 @@
-package com.fastwebsocketserver;
+package com.webservers;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -21,7 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.iharder.Base64;
 
-public class FastWebSocketServer {
+public class WebSocketServer {
 
     private static final int port = 1500;
     private static ByteBuffer inputBuffer;
@@ -51,9 +51,9 @@ public class FastWebSocketServer {
                             }
                         }
                     } catch (InterruptedException | ExecutionException | TimeoutException | IOException ex) {
-                        Logger.getLogger(FastWebSocketServer.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(WebSocketServer.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (Exception ex) {
-                        Logger.getLogger(FastWebSocketServer.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(WebSocketServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
 

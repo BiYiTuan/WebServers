@@ -1,4 +1,4 @@
-package com.fasthttpserver;
+package com.webservers;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class FastHttpServer {
+public class HttpServer {
 
     private static final Integer port = 1500;
 
@@ -40,7 +40,7 @@ public class FastHttpServer {
                         byteBuffer.clear();
                         asynchronousSocketChannel.close();
                     } catch (InterruptedException | ExecutionException | TimeoutException | IOException ex) {
-                        Logger.getLogger(FastHttpServer.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     try {
                         if (asynchronousSocketChannel.isOpen()) {

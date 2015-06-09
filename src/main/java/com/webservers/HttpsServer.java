@@ -1,4 +1,4 @@
-package com.fasthttpsserver;
+package com.webservers;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,7 +31,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
-public class FastHttpsServer {
+public class HttpsServer {
 
     private static final int port = 1500;
     private static SSLContext sslContext;
@@ -48,9 +48,9 @@ public class FastHttpsServer {
             long endTime = System.currentTimeMillis();
             System.out.println("Fast Https Server started in " + (endTime - startTime) + "ms.");
         } catch (IOException ex) {
-            Logger.getLogger(FastHttpsServer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
         } catch (Exception ex) {
-            Logger.getLogger(FastHttpsServer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         while (true) {
@@ -120,7 +120,7 @@ public class FastHttpsServer {
                 RequestHandler requestHandler = new RequestHandler(asynchronousSocketChannel, sslContext);
                 requestHandler.handle();
             } catch (Exception ex) {
-                Logger.getLogger(FastHttpsServer.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -139,7 +139,7 @@ public class FastHttpsServer {
                 ByteBuffer outputBuffer = ByteBuffer.wrap(buffer);
                 asynchronousSocketChannel.write(outputBuffer, sessionState, writeCompletionHandler);
             } catch (Exception ex) {
-                Logger.getLogger(FastHttpsServer.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
