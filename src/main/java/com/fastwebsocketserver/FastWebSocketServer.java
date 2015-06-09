@@ -1,6 +1,5 @@
 package com.fastwebsocketserver;
 
-import static com.fastwebsocketserver.FastWebSocketServerBackup.encodeUnmaskedFrame;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
