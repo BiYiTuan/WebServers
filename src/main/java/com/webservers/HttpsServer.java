@@ -46,7 +46,7 @@ public class HttpsServer {
             SessionState state = new SessionState();
             listener.accept(state, acceptCompletionHandler);
             long endTime = System.currentTimeMillis();
-            System.out.println("Fast Https Server started in " + (endTime - startTime) + "ms.");
+            System.out.println("Https Server started in " + (endTime - startTime) + "ms.");
         } catch (IOException ex) {
             Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
         } catch (Exception ex) {

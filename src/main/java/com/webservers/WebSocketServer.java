@@ -24,6 +24,7 @@ import net.iharder.Base64;
 public class WebSocketServer {
 
     private static final int port = 1500;
+    private static Boolean connectionOpen;
     private static ByteBuffer inputBuffer;
     private static ByteBuffer outputBuffer;
 
@@ -37,17 +38,19 @@ public class WebSocketServer {
                 public void completed(AsynchronousSocketChannel asynchronousSocketChannel, Void att) {
                     try {
                         listener.accept(null, this);
-                        inputBuffer = ByteBuffer.allocate(4096);
-                        asynchronousSocketChannel.read(inputBuffer).get(2000, TimeUnit.SECONDS);
-                        inputBuffer.flip();
-
-                        while (true) {
-                            if (isHandshake(asynchronousSocketChannel)) {
-                                onOpen(asynchronousSocketChannel);
-                            } else if (isMessage(asynchronousSocketChannel)) {
-                                onMessage(asynchronousSocketChannel);
-                            } else if (isClose(asynchronousSocketChannel)) {
-                                onClose(asynchronousSocketChannel);
+                        if (isHandshake(asynchronousSocketChannel)) {
+                            onOpen(asynchronousSocketChannel);
+                        }
+                        while (connectionOpen) {
+                            inputBuffer = ByteBuffer.allocate(4096);
+                            asynchronousSocketChannel.read(inputBuffer).get(2000, TimeUnit.SECONDS);
+                            inputBuffer.flip();
+                            if (inputBuffer.hasRemaining()) {
+                                if (isMessage(asynchronousSocketChannel)) {
+                                    onMessage(asynchronousSocketChannel);
+                                } else if (isClose(asynchronousSocketChannel)) {
+                                    onClose(asynchronousSocketChannel);
+                                }
                             }
                         }
                     } catch (InterruptedException | ExecutionException | TimeoutException | IOException ex) {
@@ -63,7 +66,7 @@ public class WebSocketServer {
             });
 
             Long endTime = System.currentTimeMillis();
-            System.out.println("Fast WebSocket Server started in " + (endTime - startTime) + "ms.");
+            System.out.println("WebSocket Server started in " + (endTime - startTime) + "ms.");
         } catch (IOException ex) {
         }
 
@@ -76,8 +79,12 @@ public class WebSocketServer {
     }
 
     public static Boolean isHandshake(AsynchronousSocketChannel asynchronousSocketChannel) throws ExecutionException, InterruptedException, TimeoutException {
+        inputBuffer = ByteBuffer.allocate(4096);
+        asynchronousSocketChannel.read(inputBuffer).get(2000, TimeUnit.SECONDS);
+        inputBuffer.flip();
         String message = Charset.defaultCharset().decode(inputBuffer).toString();
-        return message.contains("Upgrade: websocket");
+        inputBuffer.flip();
+        return (connectionOpen = message.contains("Upgrade: websocket"));
     }
 
     public static Boolean isMessage(AsynchronousSocketChannel asynchronousSocketChannel) throws Exception {
@@ -85,6 +92,7 @@ public class WebSocketServer {
         if (inputBuffer.hasRemaining()) {
             inputBuffer.rewind();
             String message = decodeMaskedFrame(inputBuffer);
+            //If a message is sent that is equal to "CLOSE" then the connection will close (oops)
             if (!message.equals("CLOSE")) {
                 isMessage = true;
             }
@@ -94,6 +102,7 @@ public class WebSocketServer {
 
     public static Boolean isClose(AsynchronousSocketChannel asynchronousSocketChannel) throws Exception {
         Boolean isClose = false;
+        inputBuffer.flip();
         if (inputBuffer.hasRemaining()) {
             inputBuffer.rewind();
             String message = decodeMaskedFrame(inputBuffer);
@@ -105,7 +114,7 @@ public class WebSocketServer {
     }
 
     public static void onOpen(AsynchronousSocketChannel asynchronousSocketChannel) throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException {
-        String WS_MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        String WebSocketsMagicString = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
         Properties properties = new Properties();
         StringBuilder sb = new StringBuilder();
         while (inputBuffer.hasRemaining()) {
@@ -121,7 +130,7 @@ public class WebSocketServer {
         String message
                 = "HTTP/1.1 101 Switching Protocols\r\n"
                 + "Connection: Upgrade\r\n"
-                + "Sec-WebSocket-Accept: " + Base64.encodeBytes(MessageDigest.getInstance("SHA1").digest((properties.getProperty("Sec-WebSocket-Key") + WS_MAGIC_STRING).getBytes())) + "\r\n"
+                + "Sec-WebSocket-Accept: " + Base64.encodeBytes(MessageDigest.getInstance("SHA1").digest((properties.getProperty("Sec-WebSocket-Key") + WebSocketsMagicString).getBytes())) + "\r\n"
                 + "Upgrade: websocket\r\n"
                 + "\r\n";
         outputBuffer = ByteBuffer.allocate(message.getBytes().length);
@@ -130,15 +139,17 @@ public class WebSocketServer {
         while (outputBuffer.hasRemaining()) {
             asynchronousSocketChannel.write(outputBuffer);
         }
-        ByteBuffer alertBuffer = encodeUnmaskedFrame(1, "Connection Established");
-        alertBuffer.flip();
-        alertBuffer.rewind();
-        while (alertBuffer.hasRemaining()) {
-            asynchronousSocketChannel.write(alertBuffer);
+        outputBuffer = encodeUnmaskedFrame(1, "Connection Established");
+        outputBuffer.flip();
+        outputBuffer.rewind();
+        while (outputBuffer.hasRemaining()) {
+            asynchronousSocketChannel.write(outputBuffer);
         }
     }
 
     public static void onMessage(AsynchronousSocketChannel asynchronousSocketChannel) throws Exception {
+        inputBuffer.flip();
+        inputBuffer.rewind();
         String message = decodeMaskedFrame(inputBuffer);
         outputBuffer = encodeUnmaskedFrame(1, message);
         outputBuffer.flip();
@@ -160,6 +171,7 @@ public class WebSocketServer {
         while (closeBuffer.hasRemaining()) {
             asynchronousSocketChannel.write(closeBuffer);
         }
+        connectionOpen = false;
         asynchronousSocketChannel.close();
     }
 

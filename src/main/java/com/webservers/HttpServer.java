@@ -57,7 +57,7 @@ public class HttpServer {
         } catch (IOException ex) {
         }
         long endTime = System.currentTimeMillis();
-        System.out.println("Fast Http Server started in " + (endTime - startTime) + "ms.");
+        System.out.println("Http Server started in " + (endTime - startTime) + "ms.");
         while (true) {
             try {
                 Thread.sleep(Long.MAX_VALUE);
