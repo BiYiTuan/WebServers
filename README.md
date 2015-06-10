@@ -1,5 +1,5 @@
 # WebServers
-Simple, single class http, https, websocket and websocket secure web servers built to demo **Java SE** NIO.2, `AIO` libraries. Examples contain the minimum amount of code required to perform a call without getting any errors.
+Simple, single class http, https, websocket and websocket secure web servers built to demo **Java SE** NIO.2, `AIO` libraries. The objective of this repository is to drive examples that contain as few lines of code possible to perform a call without getting any errors.
 
 *Note: Secure servers are currently incomplete*
 
