@@ -42,12 +42,6 @@ public class HttpServer {
                     } catch (InterruptedException | ExecutionException | TimeoutException | IOException ex) {
                         Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    try {
-                        if (asynchronousSocketChannel.isOpen()) {
-                            asynchronousSocketChannel.close();
-                        }
-                    } catch (IOException ex) {
-                    }
                 }
 
                 @Override
