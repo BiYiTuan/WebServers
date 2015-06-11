@@ -10,9 +10,13 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
@@ -62,12 +66,10 @@ public class HttpsServer {
                         read(asynchronousSocketChannel);
 
                         //Send Response
-                        write(response(), asynchronousSocketChannel);
+                        write(createResponse(), asynchronousSocketChannel);
 
                         asynchronousSocketChannel.close();
-                    } catch (InterruptedException | ExecutionException | TimeoutException | IOException ex) {
-                        Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (Exception ex) {
+                    } catch (InterruptedException | ExecutionException | IOException | CertificateException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException ex) {
                         Logger.getLogger(HttpsServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
@@ -88,7 +90,7 @@ public class HttpsServer {
         }
     }
 
-    private static void createSSLContext() throws Exception {
+    private static void createSSLContext() throws CertificateException, IOException, KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
         char[] passphrase = "password".toCharArray();
         KeyStore ks = KeyStore.getInstance("JKS");
         ks.load(new FileInputStream("keystore.jks"), passphrase);
@@ -98,6 +100,25 @@ public class HttpsServer {
         tmf.init(ks);
         sslContext = SSLContext.getInstance("TLS");
         sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+    }
+
+    private static ByteBuffer createResponse() {
+        CharBuffer cb = CharBuffer.allocate(1024);
+        for (;;) {
+            try {
+                cb.put("HTTP/1.0 ").put("200 OK").put("\r\n");
+                cb.put("Server: niossl/0.1").put("\r\n");
+                cb.put("Content-type: ").put("text/plain; charset=iso-8859-1").put("\r\n");
+                cb.put("Content-length: ").put("31").put("\r\n");
+                cb.put("\r\n");
+                cb.put("bla bla bla bla");
+                break;
+            } catch (BufferOverflowException x) {
+                cb = CharBuffer.allocate(cb.capacity() * 2);
+            }
+        }
+        cb.flip();
+        return ascii.encode(cb);
     }
 
     private static Boolean doHandshake(AsynchronousSocketChannel asynchronousSocketChannel) throws IOException, ExecutionException, InterruptedException, RuntimeException {
@@ -182,18 +203,16 @@ public class HttpsServer {
         return initialHSComplete;
     }
 
-    private static int read(AsynchronousSocketChannel asynchronousSocketChannel) throws IOException, ExecutionException, IllegalStateException, InterruptedException {
+    private static void read(AsynchronousSocketChannel asynchronousSocketChannel) throws IOException, ExecutionException, IllegalStateException, InterruptedException {
         SSLEngineResult result2;
-        int pos = networkBuffer.position();
         if (asynchronousSocketChannel.read(inputBuffer).get() == -1) {
             sslEngine.closeInbound();
-            return -1;
         }
         do {
-            ByteBuffer bb2 = ByteBuffer.allocate(networkBuffer.limit());
+            ByteBuffer byteBuffer = ByteBuffer.allocate(networkBuffer.limit());
             inputBuffer.flip();
-            bb2.put(inputBuffer);
-            inputBuffer = bb2;
+            byteBuffer.put(inputBuffer);
+            inputBuffer = byteBuffer;
             inputBuffer.flip();
             result2 = sslEngine.unwrap(inputBuffer, networkBuffer);
             inputBuffer.compact();
@@ -202,10 +221,10 @@ public class HttpsServer {
                     break;
                 case BUFFER_UNDERFLOW:
                     if (sslEngine.getSession().getPacketBufferSize() > inputBuffer.capacity()) {
-                        bb2 = ByteBuffer.allocate(networkBuffer.limit());
+                        byteBuffer = ByteBuffer.allocate(networkBuffer.limit());
                         outputBuffer.flip();
-                        bb2.put(outputBuffer);
-                        outputBuffer = bb2;
+                        byteBuffer.put(outputBuffer);
+                        outputBuffer = byteBuffer;
                         break;
                     }
                 case OK:
@@ -218,18 +237,12 @@ public class HttpsServer {
                     break;
             }
         } while ((inputBuffer.position() != 0) && result2.getStatus() != SSLEngineResult.Status.BUFFER_UNDERFLOW);
-        return (networkBuffer.position() - pos);
     }
 
-    private static int write(ByteBuffer src, AsynchronousSocketChannel asynchronousSocketChannel) throws IOException {
-        int retValue = 0;
+    private static void write(ByteBuffer src, AsynchronousSocketChannel asynchronousSocketChannel) throws IOException {
         asynchronousSocketChannel.write(outputBuffer);
-        if (outputBuffer.hasRemaining() && outputBuffer.hasRemaining()) {
-            return retValue;
-        }
         outputBuffer.clear();
         SSLEngineResult result2 = sslEngine.wrap(src, outputBuffer);
-        retValue = result2.bytesConsumed();
         outputBuffer.flip();
         switch (result2.getStatus()) {
             case OK:
@@ -244,25 +257,5 @@ public class HttpsServer {
         if (outputBuffer.hasRemaining()) {
             asynchronousSocketChannel.write(outputBuffer);
         }
-        return retValue;
-    }
-
-    private static ByteBuffer response() {
-        CharBuffer cb = CharBuffer.allocate(1024);
-        for (;;) {
-            try {
-                cb.put("HTTP/1.0 ").put("200 OK").put("\r\n");
-                cb.put("Server: niossl/0.1").put("\r\n");
-                cb.put("Content-type: ").put("text/plain; charset=iso-8859-1").put("\r\n");
-                cb.put("Content-length: ").put("31").put("\r\n");
-                cb.put("\r\n");
-                cb.put("bla bla bla bla");
-                break;
-            } catch (BufferOverflowException x) {
-                cb = CharBuffer.allocate(cb.capacity() * 2);
-            }
-        }
-        cb.flip();
-        return ascii.encode(cb);
     }
 }
